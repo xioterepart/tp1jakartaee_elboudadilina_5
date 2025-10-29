@@ -55,6 +55,24 @@
                                          cols="50" rows="15"/>
                     </h:panelGrid>
 
+                    <h:panelGrid id="paneldebug" columns="1" rendered="#{bb.debug}">
+                        <h:panelGroup>
+                            <h:outputText value="JSON envoyé dans la requête :"/>
+                            <button onclick="copyToClipboard('jsonrequete')">Copier requête JSON</button>
+                        </h:panelGroup>
+                        <h:inputTextarea id="jsonrequete" value="#{bb.texteRequeteJson}" title="Requête JSON"
+                                         cols="50" rows="15" readonly="true"/>
+                        <h:panelGroup>
+                            <h:outputText value="JSON retourné dans la réponse :"/>
+                            <button onclick="copyToClipboard('jsonreponse')">Copier réponse JSON</button>
+                        </h:panelGroup>
+                        <h:inputTextarea id="jsonreponse" value="#{bb.texteReponseJson}" title="Réponse JSON"
+                                         cols="50" rows="15" readonly="true"/>
+                    </h:panelGrid>
+                    <h:commandButton id="debugbutton" value="#{bb.debug?'Mode Normal':'Mode Debug'}"
+                                     action="#{bb.toggleDebug()}"/>
+
+
                 </h:panelGrid>
                 <h:panelGrid id="paneldroit" columns="1" style="vertical-align: top;">
                     <h:panelGroup>

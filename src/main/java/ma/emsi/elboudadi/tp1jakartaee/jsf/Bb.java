@@ -52,6 +52,14 @@ public class Bb implements Serializable {
      */
     private StringBuilder conversation = new StringBuilder();
 
+    private String texteRequeteJson;
+
+    private String texteReponseJson;
+
+    private boolean debug;
+
+
+
     /**
      * Contexte JSF. Utilisé pour qu'un message d'erreur s'affiche dans le formulaire.
      */
@@ -63,6 +71,8 @@ public class Bb implements Serializable {
      */
     public Bb() {
     }
+
+
 
     public String getRoleSysteme() {
         return roleSysteme;
@@ -105,6 +115,32 @@ public class Bb implements Serializable {
         this.conversation = new StringBuilder(conversation);
     }
 
+    public String getTexteRequeteJson() {
+        return texteRequeteJson;
+    }
+
+    public void setTexteRequeteJson(String texteRequeteJson) {
+        this.texteRequeteJson = texteRequeteJson;
+    }
+
+    // 🟢 Getter et Setter pour texteReponseJson
+    public String getTexteReponseJson() {
+        return texteReponseJson;
+    }
+
+    public void setTexteReponseJson(String texteReponseJson) {
+        this.texteReponseJson = texteReponseJson;
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+
     /**
      * Envoie la question au serveur.
      * En attendant de l'envoyer à un LLM, le serveur fait un traitement quelconque, juste pour tester :
@@ -113,6 +149,11 @@ public class Bb implements Serializable {
      *
      * @return null pour rester sur la même page.
      */
+
+    public void toggleDebug() {
+        this.setDebug(!isDebug());
+    }
+
     public String envoyer() {
         if (question == null || question.isBlank()) {
             // Erreur ! Le formulaire va être réaffiché en réponse à la requête POST, avec un message d'erreur.
@@ -135,6 +176,7 @@ public class Bb implements Serializable {
         afficherConversation();
         return null;
     }
+
 
     /**
      * Pour un nouveau chat.
