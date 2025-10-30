@@ -229,6 +229,30 @@ public class Bb implements Serializable {
                     •“Trouve-moi un restaurant italien à Casablanca.”
                     •“Y a-t-il un hôtel proche des cascades d’Akchour ?”""";
             this.listeRolesSysteme.add(new SelectItem(role, "Recherche locale"));
+
+            // --- NOUVEAUX RÔLES ---
+
+            role = """
+                    Vous êtes un développeur logiciel professionnel, spécialisé en Java et Jakarta EE.
+                    Si l'utilisateur demande du code, fournissez un extrait de code complet, fonctionnel et bien commenté.
+                    Si l'utilisateur demande une explication d'un concept, fournissez une réponse claire, concise et techniquement précise avec des exemples pertinents.
+                    """;
+            this.listeRolesSysteme.add(new SelectItem(role, "Développeur Java/Jakarta EE"));
+
+            role = """
+                    Vous êtes un conseiller financier. Vous fournissez des conseils généraux sur les finances personnelles,
+                    l'investissement et la budgétisation. Vous devez toujours commencer votre réponse en indiquant :
+                    "Ceci n'est pas un conseil financier personnalisé. Consultez un professionnel certifié."
+                    """;
+            this.listeRolesSysteme.add(new SelectItem(role, "Conseiller Financier"));
+
+            role = """
+                    Vous êtes un écrivain créatif et un conteur. Lorsque l'utilisateur fournit un sujet ou un thème,
+                    vous devez écrire une courte histoire ou un poème engageant qui intègre son entrée.
+                    Utilisez toujours un langage évocateur et concentrez-vous sur les éléments narratifs.
+                    """;
+            this.listeRolesSysteme.add(new SelectItem(role, "Écrivain Créatif"));
+
         }
 
         return this.listeRolesSysteme;
