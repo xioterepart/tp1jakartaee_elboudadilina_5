@@ -6,15 +6,15 @@ import jakarta.faces.model.SelectItem;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-// NOUVEL IMPORT
-import ma.emsi.elboudadi.tp1jakartaee.util.JsonUtil;
-// NOUVEL IMPORT
-import ma.emsi.elboudadi.tp1jakartaee.util.LlmInteraction;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.stream.Collectors;
+import ma.emsi.elboudadi.tp1jakartaee.llm.JsonUtilPourGemini;
+import ma.emsi.elboudadi.tp1jakartaee.llm.LlmInteraction;
+import ma.emsi.elboudadi.tp1jakartaee.llm.RequeteException;
 
 /**
  * Backing bean pour la page JSF index.xhtml.
@@ -57,11 +57,28 @@ public class Bb implements Serializable {
     private StringBuilder conversation = new StringBuilder();
 
     private String texteRequeteJson;
-
     private String texteReponseJson;
 
-    private boolean debug;
+    @Inject
+    private JsonUtilPourGemini jsonUtil;
 
+
+
+    private boolean debug = false;
+
+    public boolean isDebug() {
+
+        return debug;
+    }
+    public void toggleDebug() {
+
+
+
+        this.setDebug(!isDebug());
+    }
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
 
     /**
      * Contexte JSF. Utilisé pour qu'un message d'erreur s'affiche dans le formulaire.
@@ -69,16 +86,11 @@ public class Bb implements Serializable {
     @Inject
     private FacesContext facesContext;
 
-    // INJECTION DE LA CLASSE JsonUtil
-    @Inject
-    private JsonUtil jsonUtil;
-
     /**
      * Obligatoire pour un bean CDI (classe gérée par CDI), s'il y a un autre constructeur.
      */
     public Bb() {
     }
-
 
     public String getRoleSysteme() {
         return roleSysteme;
@@ -121,80 +133,47 @@ public class Bb implements Serializable {
         this.conversation = new StringBuilder(conversation);
     }
 
-    public String getTexteRequeteJson() {
-        return texteRequeteJson;
-    }
-
-    public void setTexteRequeteJson(String texteRequeteJson) {
-        this.texteRequeteJson = texteRequeteJson;
-    }
-
-    // 🟢 Getter et Setter pour texteReponseJson
-    public String getTexteReponseJson() {
-        return texteReponseJson;
-    }
-
-    public void setTexteReponseJson(String texteReponseJson) {
-        this.texteReponseJson = texteReponseJson;
-    }
-
-    public boolean isDebug() {
-        return debug;
-    }
-
-    public void setDebug(boolean debug) {
-        this.debug = debug;
-    }
-
-
-    /**
+    /*
      * Envoie la question au serveur.
+     * En attendant de l'envoyer à un LLM, le serveur fait un traitement quelconque, juste pour tester :
+     * Le traitement consiste à copier la question en minuscules et à l'entourer avec "||". Le rôle système
+     * est ajouté au début de la première réponse.
      *
      * @return null pour rester sur la même page.
      */
-
-    public void toggleDebug() {
-        this.setDebug(!isDebug());
-    }
-
     public String envoyer() {
         if (question == null || question.isBlank()) {
-            // Erreur ! Le formulaire va être réaffiché en réponse à la requête POST, avec un message d'erreur.
             FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
                     "Texte question vide", "Il manque le texte de la question");
             facesContext.addMessage(null, message);
             return null;
         }
 
-        // Si la conversation n'a pas encore commencé, envoyer le rôle système.
-        if (this.conversation.isEmpty()) {
-            jsonUtil.setRoleSysteme(roleSysteme);
-            // Invalide le bouton pour changer le rôle système
-            this.roleSystemeChangeable = false;
-        }
+        jsonUtil.setSystemRole(roleSysteme);
 
-        // APPEL DE LA CLASSE JsonUtil
         try {
             LlmInteraction interaction = jsonUtil.envoyerRequete(question);
             this.reponse = interaction.reponseExtraite();
             this.texteRequeteJson = interaction.questionJson();
             this.texteReponseJson = interaction.reponseJson();
-        } catch (Exception e) {
+        } catch (RequeteException e) {
             FacesMessage message =
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
                             "Problème de connexion avec l'API du LLM",
-                            "Problème de connexion avec l'API du LLM: " + e.getMessage());
+                            "Problème de connexion avec l'API du LLM" + e.getMessage());
             facesContext.addMessage(null, message);
-            return null; // Rester sur la même page et afficher le message d'erreur.
         }
 
-        // La conversation contient l'historique des questions-réponses depuis le début.
+        // Mise à jour de la conversation
         afficherConversation();
-        // Réinitialiser la question pour le champ de saisie
-        this.question = null;
-        return null;
-    }
 
+        // Une fois qu’on a envoyé la question, on bloque le rôle système si c’est le premier message
+        if (this.conversation.toString().split("== User:").length <= 2) { // Correction de la condition
+            this.roleSystemeChangeable = false;
+        }
+
+        return null; // reste sur la même page
+    }
 
     /**
      * Pour un nouveau chat.
@@ -203,7 +182,6 @@ public class Bb implements Serializable {
      * sans changer de vue.
      * Le fait de changer de vue va faire supprimer l'instance en cours du backing bean par CDI et donc on reprend
      * tout comme au début puisqu'une nouvelle instance du backing va être utilisée par la page index.xhtml.
-     *
      * @return "index"
      */
     public String nouveauChat() {
@@ -243,8 +221,25 @@ public class Bb implements Serializable {
                     are you tell them the average price of a meal.
                     """;
             this.listeRolesSysteme.add(new SelectItem(role, "Guide touristique"));
+
+            role = """
+                    Spécialisé dans les recherches locales : restaurants, cafés, hôtels, lieux touristiques, etc.
+                    🪄 Exemples :
+
+                    •“Trouve-moi un restaurant italien à Casablanca.”
+                    •“Y a-t-il un hôtel proche des cascades d’Akchour ?”""";
+            this.listeRolesSysteme.add(new SelectItem(role, "Recherche locale"));
         }
 
         return this.listeRolesSysteme;
     }
+
+    public String getTexteRequeteJson() {
+        return texteRequeteJson;
+    }
+
+    public String getTexteReponseJson() {
+        return texteReponseJson;
+    }
+
 }

@@ -46,7 +46,7 @@
                         </h:panelGroup>
                         <h:inputTextarea id="question" value="#{bb.question}" title="Question"
                                          cols="50" rows="5"/>
-                        <h:commandButton value="Envoyer la question" action="#{bb.envoyer}"/>
+                        <h:commandButton value="Envoyer la question" action="#{bb.envoyer()}" update="@form"/>
                         <h:panelGroup>
                             <h:outputText value="Réponse :"/>
                             <button onclick="copyToClipboard('reponse')">Copier réponse</button>
@@ -70,7 +70,7 @@
                                          cols="50" rows="15" readonly="true"/>
                     </h:panelGrid>
                     <h:commandButton id="debugbutton" value="#{bb.debug?'Mode Normal':'Mode Debug'}"
-                                     action="#{bb.toggleDebug()}"/>
+                                     action="#{bb.toggleDebug()}" update="@form"/>
 
 
                 </h:panelGrid>
