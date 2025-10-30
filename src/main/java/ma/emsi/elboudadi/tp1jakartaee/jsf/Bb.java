@@ -6,6 +6,10 @@ import jakarta.faces.model.SelectItem;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+// NOUVEL IMPORT
+import ma.emsi.elboudadi.tp1jakartaee.util.JsonUtil;
+// NOUVEL IMPORT
+import ma.emsi.elboudadi.tp1jakartaee.util.LlmInteraction;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -59,19 +63,21 @@ public class Bb implements Serializable {
     private boolean debug;
 
 
-
     /**
      * Contexte JSF. Utilisé pour qu'un message d'erreur s'affiche dans le formulaire.
      */
     @Inject
     private FacesContext facesContext;
 
+    // INJECTION DE LA CLASSE JsonUtil
+    @Inject
+    private JsonUtil jsonUtil;
+
     /**
      * Obligatoire pour un bean CDI (classe gérée par CDI), s'il y a un autre constructeur.
      */
     public Bb() {
     }
-
 
 
     public String getRoleSysteme() {
@@ -143,9 +149,6 @@ public class Bb implements Serializable {
 
     /**
      * Envoie la question au serveur.
-     * En attendant de l'envoyer à un LLM, le serveur fait un traitement quelconque, juste pour tester :
-     * Le traitement consiste à copier la question en minuscules et à l'entourer avec "||". Le rôle système
-     * est ajouté au début de la première réponse.
      *
      * @return null pour rester sur la même page.
      */
@@ -162,18 +165,33 @@ public class Bb implements Serializable {
             facesContext.addMessage(null, message);
             return null;
         }
-        // Entourer la réponse avec "||".
-        this.reponse = "||";
-        // Si la conversation n'a pas encore commencé, ajouter le rôle système au début de la réponse
+
+        // Si la conversation n'a pas encore commencé, envoyer le rôle système.
         if (this.conversation.isEmpty()) {
-            // Ajouter le rôle système au début de la réponse
-            this.reponse += roleSysteme.toUpperCase(Locale.FRENCH) + "\n";
+            jsonUtil.setRoleSysteme(roleSysteme);
             // Invalide le bouton pour changer le rôle système
             this.roleSystemeChangeable = false;
         }
-        this.reponse += question.toLowerCase(Locale.FRENCH) + "||";
+
+        // APPEL DE LA CLASSE JsonUtil
+        try {
+            LlmInteraction interaction = jsonUtil.envoyerRequete(question);
+            this.reponse = interaction.reponseExtraite();
+            this.texteRequeteJson = interaction.questionJson();
+            this.texteReponseJson = interaction.reponseJson();
+        } catch (Exception e) {
+            FacesMessage message =
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Problème de connexion avec l'API du LLM",
+                            "Problème de connexion avec l'API du LLM: " + e.getMessage());
+            facesContext.addMessage(null, message);
+            return null; // Rester sur la même page et afficher le message d'erreur.
+        }
+
         // La conversation contient l'historique des questions-réponses depuis le début.
         afficherConversation();
+        // Réinitialiser la question pour le champ de saisie
+        this.question = null;
         return null;
     }
 
@@ -185,6 +203,7 @@ public class Bb implements Serializable {
      * sans changer de vue.
      * Le fait de changer de vue va faire supprimer l'instance en cours du backing bean par CDI et donc on reprend
      * tout comme au début puisqu'une nouvelle instance du backing va être utilisée par la page index.xhtml.
+     *
      * @return "index"
      */
     public String nouveauChat() {
